@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hochalp Erlebnis – Bergwelt entdecken</title>
+  <meta name="description" content="Fiktive Demo-Seite eines Tourismusanbieters mit eingebettetem 360°-Panorama.">
+  <style>
+    :root {
+      --blau: #0f3d5e;
+      --blau-hell: #1f6fa3;
+      --akzent: #e8833a;
+      --text: #1f2a33;
+      --grau: #5d6b77;
+      --hell: #f4f7fa;
+      --weiss: #ffffff;
+      --radius: 14px;
+      --schatten: 0 6px 24px rgba(15, 61, 94, 0.12);
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --hero-bild: url("https://ram1630.github.io/panoramaview/Panoramabilder/IMG-20261005-WA0005.jpg");
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font); color: var(--text); background: var(--weiss); line-height: 1.6; }
+    a { color: var(--blau-hell); }
+    img { max-width: 100%; display: block; }
+    .container { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+
+    /* Kopfzeile */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(6px);
+      border-bottom: 1px solid #e3e9ee;
+    }
+    .kopf { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; color: var(--blau); text-decoration: none; }
+    .logo svg { width: 32px; height: 32px; }
+    nav ul { list-style: none; display: flex; gap: 22px; margin: 0; padding: 0; }
+    nav a { color: var(--text); text-decoration: none; font-size: 15px; }
+    nav a:hover { color: var(--blau-hell); }
+    .btn {
+      display: inline-block; background: var(--akzent); color: #fff; text-decoration: none;
+      padding: 10px 20px; border-radius: 999px; font-weight: 600; font-size: 15px; border: 0; cursor: pointer;
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .btn.hell { background: rgba(255,255,255,0.92); color: var(--blau); }
+    .menue-btn { display: none; background: none; border: 0; font-size: 26px; color: var(--blau); cursor: pointer; }
+
+    /* Hero */
+    .hero {
+      position: relative; min-height: 72vh; display: flex; align-items: flex-end;
+      background: linear-gradient(180deg, rgba(10,30,50,0.15) 0%, rgba(10,30,50,0.65) 100%), var(--hero-bild) center 35% / cover no-repeat, var(--blau);
+      color: #fff;
+    }
+    .hero .container { padding-bottom: 64px; padding-top: 96px; }
+    .hero .label { display: inline-block; background: rgba(255,255,255,0.18); padding: 4px 12px; border-radius: 999px; font-size: 14px; margin-bottom: 14px; }
+    .hero h1 { font-size: clamp(32px, 6vw, 58px); line-height: 1.1; margin: 0 0 14px; max-width: 760px; }
+    .hero p { font-size: clamp(16px, 2vw, 20px); max-width: 620px; margin: 0 0 26px; opacity: 0.95; }
+    .hero .aktionen { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* Abschnitte */
+    section { padding: 72px 0; }
+    section.grau { background: var(--hell); }
+    .ueberschrift { text-align: center; max-width: 680px; margin: 0 auto 36px; }
+    .ueberschrift .kicker { color: var(--akzent); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 13px; }
+    .ueberschrift h2 { font-size: clamp(26px, 4vw, 38px); margin: 6px 0 10px; color: var(--blau); line-height: 1.2; }
+    .ueberschrift p { color: var(--grau); margin: 0; }
+
+    /* Panorama-Ansichtsfenster */
+    .panorama-fenster {
+      position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--schatten); background: #0b1620;
+    }
+    .panorama-fenster iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .panorama-info { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; color: var(--grau); font-size: 14px; }
+    .panorama-info a { font-weight: 600; text-decoration: none; }
+
+    /* Karten */
+    .karten { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .karte { background: #fff; border-radius: var(--radius); box-shadow: var(--schatten); padding: 26px; }
+    .karte .icon { width: 48px; height: 48px; border-radius: 12px; background: #e6f0f7; display: grid; place-items: center; font-size: 24px; margin-bottom: 14px; }
+    .karte h3 { margin: 0 0 8px; color: var(--blau); font-size: 20px; }
+    .karte p { margin: 0; color: var(--grau); font-size: 15px; }
+
+    /* Fakten */
+    .fakten { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; text-align: center; }
+    .fakt b { display: block; font-size: 34px; color: var(--blau); }
+    .fakt span { color: var(--grau); font-size: 14px; }
+
+    /* Aufruf */
+    .aufruf { background: var(--blau); color: #fff; border-radius: var(--radius); padding: 44px 32px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .aufruf h2 { margin: 0 0 6px; font-size: 28px; }
+    .aufruf p { margin: 0; opacity: 0.85; }
+
+    /* Fußzeile */
+    footer { background: #0b2a40; color: #c5d3de; padding: 40px 0 28px; font-size: 14px; }
+    .fuss { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 24px; }
+    footer h4 { color: #fff; margin: 0 0 10px; font-size: 15px; }
+    footer ul { list-style: none; margin: 0; padding: 0; }
+    footer li { margin-bottom: 6px; }
+    footer a { color: #c5d3de; text-decoration: none; }
+    .hinweis { border-top: 1px solid rgba(255,255,255,0.12); margin-top: 28px; padding-top: 16px; font-size: 13px; opacity: 0.8; }
+
+    /* Mobil */
+    @media (max-width: 860px) {
+      .karten { grid-template-columns: 1fr; }
+      .fakten { grid-template-columns: repeat(2, 1fr); row-gap: 28px; }
+      .fuss { grid-template-columns: 1fr; }
+      .menue-btn { display: block; }
+      nav { display: none; position: absolute; top: 64px; left: 0; right: 0; background: #fff; border-bottom: 1px solid #e3e9ee; }
+      nav.offen { display: block; }
+      nav ul { flex-direction: column; gap: 0; padding: 8px 16px 16px; }
+      nav li a { display: block; padding: 10px 0; }
+      .kopf .btn { display: none; }
+      section { padding: 52px 0; }
+      .panorama-fenster { aspect-ratio: 4 / 3; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container kopf">
+      <a class="logo" href="#">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#0f3d5e"/><path d="M5 23 L13 11 L17 17 L20 13 L27 23 Z" fill="#fff"/><circle cx="23" cy="9" r="2.5" fill="#e8833a"/></svg>
+        Hochalp Erlebnis
+      </a>
+      <button class="menue-btn" aria-label="Menü öffnen" aria-expanded="false">&#9776;</button>
+      <nav>
+        <ul>
+          <li><a href="#panorama">360° Panorama</a></li>
+          <li><a href="#erleben">Erleben</a></li>
+          <li><a href="#fakten">Fakten</a></li>
+          <li><a href="#kontakt">Kontakt</a></li>
+        </ul>
+      </nav>
+      <a class="btn" href="#kontakt">Jetzt planen</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <span class="label">Winter 2026/27</span>
+      <h1>Über den Wolken – Ihre Bergwelt wartet</h1>
+      <p>Gipfelpanoramen, Pulverschnee und Sonnenterrassen auf über 3000 Metern. Schauen Sie sich schon vor Ihrer Reise um.</p>
+      <div class="aktionen">
+        <a class="btn" href="#panorama">Panorama ansehen</a>
+        <a class="btn hell" href="#erleben">Angebote entdecken</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="panorama">
+    <div class="container">
+      <div class="ueberschrift">
+        <div class="kicker">Virtueller Rundblick</div>
+        <h2>Die Bergstation in 360°</h2>
+        <p>Ziehen Sie mit der Maus oder dem Finger, um sich umzusehen. Mit dem Mausrad oder zwei Fingern zoomen Sie hinein.</p>
+      </div>
+
+      <!-- Eingebettetes Panorama von https://ram1630.github.io/panoramaview/ -->
+      <div class="panorama-fenster">
+        <iframe src="https://ram1630.github.io/panoramaview/?scene=berg&amp;nav=0&amp;autorotate=-2"
+                title="360°-Panorama der Bergstation"
+                allowfullscreen loading="lazy"></iframe>
+      </div>
+      <div class="panorama-info">
+        <span>📍 Bergstation, auf über 3000 m</span>
+        <a href="https://ram1630.github.io/panoramaview/?scene=berg" target="_blank" rel="noopener">Im Vollbild öffnen ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="erleben" class="grau">
+    <div class="container">
+      <div class="ueberschrift">
+        <div class="kicker">Erleben</div>
+        <h2>Was Sie hier erwartet</h2>
+        <p>Ob sportlich oder gemütlich – auf dem Gipfel ist für alle etwas dabei.</p>
+      </div>
+      <div class="karten">
+        <div class="karte">
+          <div class="icon">⛷️</div>
+          <h3>Pisten &amp; Freeride</h3>
+          <p>Bestens präparierte Abfahrten und unberührte Hänge für alle Könnerstufen.</p>
+        </div>
+        <div class="karte">
+          <div class="icon">🚡</div>
+          <h3>Gipfelbahn</h3>
+          <p>In wenigen Minuten von der Talstation hinauf zur Aussichtsplattform.</p>
+        </div>
+        <div class="karte">
+          <div class="icon">☕</div>
+          <h3>Sonnenterrasse</h3>
+          <p>Hausgemachte Spezialitäten mit Blick auf ein Meer aus Gipfeln.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="fakten">
+    <div class="container">
+      <div class="fakten">
+        <div class="fakt"><b>3000+</b><span>Meter über Meer</span></div>
+        <div class="fakt"><b>120</b><span>Pistenkilometer</span></div>
+        <div class="fakt"><b>18</b><span>Bergbahnen</span></div>
+        <div class="fakt"><b>300</b><span>Sonnentage im Jahr</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="kontakt" class="grau">
+    <div class="container">
+      <div class="aufruf">
+        <div>
+          <h2>Bereit für den Gipfel?</h2>
+          <p>Planen Sie jetzt Ihren Aufenthalt – wir beraten Sie gerne.</p>
+        </div>
+        <a class="btn" href="#kontakt">Anfrage stellen</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <div class="fuss">
+        <div>
+          <h4>Hochalp Erlebnis</h4>
+          <p>Ihr Tor zur Bergwelt – Sommer wie Winter.</p>
+        </div>
+        <div>
+          <h4>Entdecken</h4>
+          <ul>
+            <li><a href="#panorama">360° Panorama</a></li>
+            <li><a href="#erleben">Angebote</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Info</h4>
+          <ul>
+            <li><a href="#kontakt">Kontakt</a></li>
+            <li><a href="#fakten">Fakten</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="hinweis">
+        Fiktive Demo-Seite zur Veranschaulichung des Einbettens. „Hochalp Erlebnis“ ist kein echtes Unternehmen, alle Angaben sind erfunden.
+        Panorama eingebettet von <a href="https://ram1630.github.io/panoramaview/">ram1630.github.io/panoramaview</a>.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobiles Menü
+    var btn = document.querySelector(".menue-btn");
+    var nav = document.querySelector("nav");
+    btn.addEventListener("click", function () {
+      var offen = nav.classList.toggle("offen");
+      btn.setAttribute("aria-expanded", offen);
+    });
+    nav.addEventListener("click", function (e) {
+      if (e.target.tagName === "A") { nav.classList.remove("offen"); btn.setAttribute("aria-expanded", false); }
+    });
+  </script>
+</body>
+</html>
