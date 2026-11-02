@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panoramaview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pannellum/2.5.6/pannellum.js"></script>
+  <script src="panoramen.js"></script>
+  <style>
+    :root {
+      --bar-bg: rgba(20, 22, 26, 0.72);
+      --bar-fg: #f2f2f2;
+      --accent: #4ea1ff;
+      --radius: 10px;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #111; font-family: var(--font); overflow: hidden; }
+    #panorama { position: absolute; inset: 0; }
+
+    /* Titel oben links */
+    #titel {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 10; padding: 6px 14px; border-radius: var(--radius);
+      background: var(--bar-bg); color: var(--bar-fg); font-size: 15px;
+      pointer-events: none; white-space: nowrap; max-width: calc(100% - 140px);
+      overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Navigationsleiste unten */
+    #nav {
+      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+      z-index: 10; display: flex; align-items: center; gap: 6px;
+      padding: 6px; border-radius: var(--radius); background: var(--bar-bg);
+      max-width: calc(100% - 24px);
+    }
+    #nav button {
+      font: inherit; font-size: 14px; color: var(--bar-fg); background: transparent;
+      border: 1px solid transparent; border-radius: 8px; padding: 6px 10px; cursor: pointer;
+      white-space: nowrap;
+    }
+    #nav button:hover { background: rgba(255,255,255,0.12); }
+    #nav button.aktiv { border-color: var(--accent); color: #fff; }
+    #szenen { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; }
+    .trenner { width: 1px; align-self: stretch; background: rgba(255,255,255,0.2); }
+
+    /* Einbetten-Dialog */
+    #dialog {
+      position: absolute; inset: 0; z-index: 20; display: none;
+      align-items: center; justify-content: center; background: rgba(0,0,0,0.5);
+      padding: 16px;
+    }
+    #dialog.offen { display: flex; }
+    #dialog .box {
+      background: #1c1f24; color: var(--bar-fg); border-radius: var(--radius);
+      padding: 18px; width: 100%; max-width: 560px;
+    }
+    #dialog h2 { margin: 0 0 10px; font-size: 17px; }
+    #dialog p { margin: 0 0 10px; font-size: 13px; opacity: 0.8; }
+    #dialog .optionen { display: flex; gap: 18px; flex-wrap: wrap; margin: 0 0 10px; font-size: 14px; }
+    #dialog .optionen label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    #dialog textarea {
+      width: 100%; height: 150px; resize: vertical; font: 12px/1.4 Consolas, monospace;
+      background: #0f1114; color: #dfe6ee; border: 1px solid #333; border-radius: 6px; padding: 8px;
+    }
+    #dialog .aktionen { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+    #dialog button {
+      font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+      border: 1px solid #444; background: #2a2e35; color: var(--bar-fg);
+    }
+    #dialog button.primaer { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Hotspots zu anderen Szenen */
+    .pnlm-hotspot.pnlm-scene { filter: drop-shadow(0 0 3px rgba(0,0,0,0.6)); }
+
+    .versteckt { display: none !important; }
+  </style>
+</head>
+<body>
+  <div id="panorama"></div>
+  <div id="titel"></div>
+
+  <nav id="nav">
+    <button id="zurueck" title="Vorheriges Panorama">&#9664;</button>
+    <div id="szenen"></div>
+    <button id="weiter" title="Nächstes Panorama">&#9654;</button>
+    <span class="trenner"></span>
+    <button id="drehen" title="Automatisch drehen">&#10227;</button>
+    <button id="einbetten" title="Code zum Einbetten">&lt;/&gt;</button>
+  </nav>
+
+  <div id="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-titel">
+    <div class="box">
+      <h2 id="dialog-titel">Panorama einbetten</h2>
+      <p>Diesen Code in eine andere Webseite einfügen. Er zeigt die aktuelle Ansicht und passt sich der Breite der Seite an.</p>
+      <div class="optionen">
+        <label><input type="checkbox" id="opt-nav" checked> Navigation ausblenden</label>
+        <label><input type="checkbox" id="opt-drehen" checked> Automatisch drehen</label>
+      </div>
+      <textarea id="embed-code" readonly></textarea>
+      <div class="aktionen">
+        <button id="schliessen">Schließen</button>
+        <button id="kopieren" class="primaer">Kopieren</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    var cfg = window.PANORAMEN;
+    var params = new URLSearchParams(location.search);
+    var zahl = function (name) {
+      var v = parseFloat(params.get(name));
+      return isNaN(v) ? undefined : v;
+    };
+
+    // URL-Parameter: scene, yaw, pitch, hfov, nav=0, autorotate=<Grad/s>
+    var startId = params.get("scene");
+    if (!cfg.szenen.some(function (s) { return s.id === startId; })) startId = cfg.start;
+    var zeigeNav = params.get("nav") !== "0";
+    var autoRotate = zahl("autorotate");
+
+    // Pannellum-Szenen aus der Konfiguration erzeugen
+    var scenes = {};
+    cfg.szenen.forEach(function (s) {
+      var haov = s.haov || 360, vaov = s.vaov || 180;
+      var sc = {
+        title: s.titel,
+        type: "equirectangular",
+        panorama: s.bild,
+        haov: haov,
+        vaov: vaov,
+        yaw: s.yaw || 0,
+        pitch: 0,
+        hfov: 70,
+        minHfov: 30,
+        maxHfov: 100,
+        minPitch: -vaov / 2,
+        maxPitch: vaov / 2,
+        hotSpots: (s.hotspots || []).map(function (h) {
+          return { pitch: h.pitch, yaw: h.yaw, type: "scene", text: h.text, sceneId: h.scene };
+        })
+      };
+      if (haov < 360) { sc.minYaw = -haov / 2; sc.maxYaw = haov / 2; }
+      scenes[s.id] = sc;
+    });
+
+    // Startansicht aus URL übernehmen
+    var start = scenes[startId];
+    if (zahl("yaw") !== undefined) start.yaw = zahl("yaw");
+    if (zahl("pitch") !== undefined) start.pitch = zahl("pitch");
+    if (zahl("hfov") !== undefined) start.hfov = zahl("hfov");
+
+    var viewer = pannellum.viewer("panorama", {
+      default: {
+        firstScene: startId,
+        autoLoad: true,
+        showControls: true,
+        compass: false,
+        sceneFadeDuration: 600,
+        autoRotate: autoRotate || false,
+        strings: {
+          loadingLabel: "Lädt …",
+          loadButtonLabel: "Panorama laden",
+          bylineLabel: "von %s"
+        }
+      },
+      scenes: scenes
+    });
+
+    // Bei Teilpanoramen den Zoom begrenzen, damit kein schwarzer Rand sichtbar wird
+    function passeZoomAn() {
+      var s = scenes[viewer.getScene()];
+      var el = document.getElementById("panorama");
+      var seitenverhaeltnis = el.clientWidth / Math.max(el.clientHeight, 1);
+      var maxH = Math.min(100, s.vaov * seitenverhaeltnis);
+      if (maxH < 360) {
+        viewer.setHfovBounds([Math.min(30, maxH), maxH]);
+        if (viewer.getHfov() > maxH) viewer.setHfov(maxH, false);
+      }
+    }
+
+    // Navigation
+    var nav = document.getElementById("nav");
+    var szenenEl = document.getElementById("szenen");
+    var titelEl = document.getElementById("titel");
+    if (!zeigeNav) nav.classList.add("versteckt");
+
+    cfg.szenen.forEach(function (s) {
+      var b = document.createElement("button");
+      b.textContent = s.titel;
+      b.dataset.id = s.id;
+      b.addEventListener("click", function () { wechsle(s.id); });
+      szenenEl.appendChild(b);
+    });
+    if (cfg.szenen.length < 2) {
+      document.getElementById("zurueck").classList.add("versteckt");
+      document.getElementById("weiter").classList.add("versteckt");
+    }
+
+    function index() {
+      var id = viewer.getScene();
+      for (var i = 0; i < cfg.szenen.length; i++) if (cfg.szenen[i].id === id) return i;
+      return 0;
+    }
+    function wechsle(id) { if (id !== viewer.getScene()) viewer.loadScene(id); }
+    function schritt(d) {
+      var n = cfg.szenen.length;
+      wechsle(cfg.szenen[(index() + d + n) % n].id);
+    }
+    document.getElementById("zurueck").addEventListener("click", function () { schritt(-1); });
+    document.getElementById("weiter").addEventListener("click", function () { schritt(1); });
+
+    var dreht = !!autoRotate;
+    var drehBtn = document.getElementById("drehen");
+    drehBtn.classList.toggle("aktiv", dreht);
+    drehBtn.addEventListener("click", function () {
+      dreht = !dreht;
+      if (dreht) viewer.startAutoRotate(-3); else viewer.stopAutoRotate();
+      drehBtn.classList.toggle("aktiv", dreht);
+    });
+
+    function aktualisiere() {
+      var id = viewer.getScene();
+      titelEl.textContent = scenes[id].title;
+      document.title = scenes[id].title + " – Panoramaview";
+      Array.prototype.forEach.call(szenenEl.children, function (b) {
+        b.classList.toggle("aktiv", b.dataset.id === id);
+      });
+      passeZoomAn();
+      // URL mitführen, damit man die aktuelle Szene als Link teilen kann
+      var p = new URLSearchParams(location.search);
+      p.set("scene", id);
+      history.replaceState(null, "", "?" + p.toString());
+    }
+    viewer.on("load", aktualisiere);
+    window.addEventListener("resize", passeZoomAn);
+
+    // Einbetten-Dialog
+    var dialog = document.getElementById("dialog");
+    var codeEl = document.getElementById("embed-code");
+    var optNav = document.getElementById("opt-nav");
+    var optDrehen = document.getElementById("opt-drehen");
+    var ansicht = {};
+
+    // Eigenständiger, flexibler Einbettungscode (funktioniert ohne fremdes CSS)
+    function erzeugeCode() {
+      var basis = location.origin + location.pathname;
+      var q = new URLSearchParams({
+        scene: ansicht.scene,
+        yaw: ansicht.yaw,
+        pitch: ansicht.pitch,
+        hfov: ansicht.hfov
+      });
+      if (optNav.checked) q.set("nav", "0");
+      if (optDrehen.checked) q.set("autorotate", "-2");
+      var titel = ("360°-Panorama " + scenes[ansicht.scene].title).replace(/"/g, "&quot;");
+      codeEl.value =
+        '<!-- 360°-Panorama von ' + basis + ' -->\n' +
+        '<div style="position:relative; width:100%; max-width:900px; aspect-ratio:16/9; border-radius:12px; overflow:hidden;">\n' +
+        '  <iframe src="' + basis + "?" + q.toString().replace(/&/g, "&amp;") + '"\n' +
+        '          title="' + titel + '"\n' +
+        '          style="position:absolute; inset:0; width:100%; height:100%; border:0;"\n' +
+        '          allowfullscreen loading="lazy"></iframe>\n' +
+        '</div>';
+    }
+    optNav.addEventListener("change", erzeugeCode);
+    optDrehen.addEventListener("change", erzeugeCode);
+
+    document.getElementById("einbetten").addEventListener("click", function () {
+      ansicht = {
+        scene: viewer.getScene(),
+        yaw: viewer.getYaw().toFixed(1),
+        pitch: viewer.getPitch().toFixed(1),
+        hfov: viewer.getHfov().toFixed(0)
+      };
+      erzeugeCode();
+      dialog.classList.add("offen");
+      codeEl.select();
+    });
+    document.getElementById("schliessen").addEventListener("click", function () {
+      dialog.classList.remove("offen");
+    });
+    dialog.addEventListener("click", function (e) { if (e.target === dialog) dialog.classList.remove("offen"); });
+    document.getElementById("kopieren").addEventListener("click", function () {
+      var btn = this;
+      var fertig = function () { btn.textContent = "Kopiert ✓"; setTimeout(function () { btn.textContent = "Kopieren"; }, 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(codeEl.value).then(fertig, function () { codeEl.select(); document.execCommand("copy"); fertig(); });
+      else { codeEl.select(); document.execCommand("copy"); fertig(); }
+    });
+  })();
+  </script>
+</body>
+</html>

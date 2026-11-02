@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Einbettungs-Beispiel</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 860px; margin: 0 auto; padding: 24px 16px; color: #222; background: #fafafa; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 18px; margin-top: 32px; }
+    .rahmen { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    .rahmen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    pre { background: #1c1f24; color: #dfe6ee; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+    table { border-collapse: collapse; font-size: 14px; }
+    td, th { border: 1px solid #ddd; padding: 6px 10px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Panoramaview – Einbettungs-Beispiel</h1>
+  <p>So sieht der Viewer aus, wenn er per <code>&lt;iframe&gt;</code> in eine fremde Webseite eingebettet wird.</p>
+
+  <h2>1. Empfohlen: flexibel, funktioniert auf jeder Webseite</h2>
+  <p>Bringt seine Gestaltung selbst mit, passt sich der Seitenbreite an (höchstens 900&nbsp;px, Format 16:9).</p>
+  <div style="position:relative; width:100%; max-width:900px; aspect-ratio:16/9; border-radius:12px; overflow:hidden;">
+    <iframe src="index.html?scene=berg&amp;nav=0&amp;autorotate=-2"
+            title="360°-Panorama der Bergstation"
+            style="position:absolute; inset:0; width:100%; height:100%; border:0;"
+            allowfullscreen loading="lazy"></iframe>
+  </div>
+  <pre>&lt;!-- 360°-Panorama von https://ram1630.github.io/bergregion/360engine/ --&gt;
+&lt;div style="position:relative; width:100%; max-width:900px; aspect-ratio:16/9; border-radius:12px; overflow:hidden;"&gt;
+  &lt;iframe src="https://ram1630.github.io/bergregion/360engine/?scene=berg&amp;amp;nav=0&amp;amp;autorotate=-2"
+          title="360°-Panorama der Bergstation"
+          style="position:absolute; inset:0; width:100%; height:100%; border:0;"
+          allowfullscreen loading="lazy"&gt;&lt;/iframe&gt;
+&lt;/div&gt;</pre>
+
+  <h2>2. Einfach: feste Größe, mit Navigation</h2>
+  <p>Kürzer, aber auf dem Handy weniger flexibel.</p>
+  <iframe src="index.html?scene=berg" width="800" height="450" style="border:0; max-width:100%;" allowfullscreen loading="lazy" title="360°-Panorama der Bergstation"></iframe>
+  <pre>&lt;iframe src="https://ram1630.github.io/bergregion/360engine/?scene=berg"
+        width="800" height="450" style="border:0" allowfullscreen loading="lazy"&gt;&lt;/iframe&gt;</pre>
+
+  <h2>URL-Parameter</h2>
+  <table>
+    <tr><th>Parameter</th><th>Bedeutung</th><th>Beispiel</th></tr>
+    <tr><td><code>scene</code></td><td>Welches Panorama (ID aus panoramen.js)</td><td><code>scene=berg</code></td></tr>
+    <tr><td><code>yaw</code></td><td>Blickrichtung horizontal in Grad</td><td><code>yaw=45</code></td></tr>
+    <tr><td><code>pitch</code></td><td>Blickrichtung vertikal in Grad</td><td><code>pitch=-10</code></td></tr>
+    <tr><td><code>hfov</code></td><td>Zoom (Blickwinkel, kleiner = näher)</td><td><code>hfov=60</code></td></tr>
+    <tr><td><code>nav</code></td><td>Navigationsleiste ausblenden</td><td><code>nav=0</code></td></tr>
+    <tr><td><code>autorotate</code></td><td>Automatisch drehen (Grad/Sekunde, negativ = andere Richtung)</td><td><code>autorotate=-3</code></td></tr>
+  </table>
+</body>
+</html>
